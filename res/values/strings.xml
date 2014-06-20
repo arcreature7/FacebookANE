@@ -1,0 +1,21 @@
+<resources>
+
+    <string name="app_name">FacebookANE</string>
+    <string name="app_id">312577948897391</string>
+    <string name="app_secret">390d6585f3a6e8061fcca4735a3aef67</string>
+    
+    <string name="btn_login">Login</string>
+    <string name="btn_logout">Log out</string>
+    
+    <string name="login_error">오류 발생, 재시도 바랍니다.</string>
+    <string name="error_fetching_profile">사용자 정보를 읽는 데 실패하였습니다. - 재시도 바랍니다.</string>
+
+    <string name="error_dialog_default_text">서버로부터 응답이 없습니다.</string>
+    <string name="network_error">네트워크 상태를 확인바랍니다.</string>
+    
+    <string name="error_dialog_title">Error</string>
+    <string name="error_dialog_button_text">확인</string>
+    
+    <string name="error_switching_screens">Fragment 전환 오류 - Please try again</string>
+    
+</resources>
