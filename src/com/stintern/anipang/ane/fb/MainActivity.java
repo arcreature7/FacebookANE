@@ -11,10 +11,13 @@ import com.facebook.LoggingBehavior;
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.Settings;
+import com.facebook.UiLifecycleHelper;
 
 public class MainActivity extends Activity {
 
     private Button buttonLoginLogout;
+    
+	private UiLifecycleHelper _uiHelper;
     private Session.StatusCallback statusCallback = new SessionStatusCallback();
     
 	@Override
@@ -24,6 +27,9 @@ public class MainActivity extends Activity {
         setContentView(
         	getResources().getIdentifier("activity_main", "layout", this.getPackageName())
         	);
+        
+        _uiHelper = new UiLifecycleHelper(this, statusCallback);
+        _uiHelper.onCreate(savedInstanceState);
 
         buttonLoginLogout = (Button)findViewById(getResources().getIdentifier("buttonLoginLogout", "id", this.getPackageName()));
         
@@ -87,30 +93,46 @@ public class MainActivity extends Activity {
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		// TODO Auto-generated method stub
 		super.onActivityResult(requestCode, resultCode, data);
-        Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
+		
+		_uiHelper.onActivityResult(requestCode, resultCode, data);
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
-		// TODO Auto-generated method stub
 		super.onSaveInstanceState(outState);
-        Session session = Session.getActiveSession();
-        Session.saveSession(session, outState);
+		
+		_uiHelper.onSaveInstanceState(outState);
 	}
 
 	@Override
 	protected void onStart() {
-		// TODO Auto-generated method stub
 		super.onStart();
         Session.getActiveSession().addCallback(statusCallback);
 	}
 
 	@Override
 	protected void onStop() {
-		// TODO Auto-generated method stub
 		super.onStop();
-        Session.getActiveSession().removeCallback(statusCallback);
+		
+		_uiHelper.onStop();
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		_uiHelper.onDestroy();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		_uiHelper.onPause();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		_uiHelper.onResume();
 	}
 }
