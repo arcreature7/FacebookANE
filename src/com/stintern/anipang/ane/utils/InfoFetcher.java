@@ -28,6 +28,7 @@ import com.parse.LogInCallback;
 import com.parse.ParseException;
 import com.parse.ParseFacebookUtils;
 import com.parse.ParseUser;
+import com.stintern.anipang.ane.ANEExtension;
 import com.stintern.anipang.ane.R;
 import com.stintern.anipang.ane.fb.MainActivity;
 
@@ -38,13 +39,13 @@ public class InfoFetcher {
 	private MainActivity _mainActivity;
     private ImageLoadAsyncTask _imageLoadAsyncTask;
 	
-	public void fetchUserInformation(final MainActivity mainActivity){
+	public void fetchUserInformation(MainActivity mainActivity){
 
 		Log.i(TAG, "fetchUserInformation Start");
 		
-		((ANEApplication)mainActivity.getApplication()).setLoggedIn(true);
-		
 		_mainActivity = mainActivity;
+		((ANEApplication)_mainActivity.getApplication()).setLoggedIn(true);
+		
 		final Session session = Session.getActiveSession();	
 		if (session != null && session.isOpened()) {
 
@@ -67,6 +68,18 @@ public class InfoFetcher {
 			params.putString("fields", "name,first_name,last_name");
 			friendsRequest.setParameters(params);
 			
+//			RequestAsyncTask friendsRq = new Request(
+//				    session,
+//				    "/me/invitable_friends",
+//				    null,
+//				    HttpMethod.GET,
+//				    new Request.Callback() {
+//				        public void onCompleted(Response response) {
+//				            Log.i(TAG, response.toString());
+//				        }
+//				    }
+//				).executeAsync();
+			
 			// 사용자의 정보를 받아옴
 			Request meRequest = Request.newMeRequest(session, new Request.GraphUserCallback() {
 				
@@ -75,10 +88,10 @@ public class InfoFetcher {
 					FacebookRequestError error = response.getError();
 					if (error != null) {
 						Log.e(TAG, error.toString());
-						handleError(mainActivity, error, true);
+						handleError(_mainActivity, error, true);
 					} else if (session == Session.getActiveSession()) {
 						// 사용자의 정보를 저장
-						((ANEApplication)mainActivity.getApplication()).setCurrentUser(user);
+						((ANEApplication)_mainActivity.getApplication()).setCurrentUser(user);
 				        
 	                    //saveUserToParse(user, session);
 					}
@@ -89,11 +102,18 @@ public class InfoFetcher {
 	
 				@Override
 				public void onBatchCompleted(RequestBatch batch) {
-					if ( ((ANEApplication)mainActivity.getApplication()).getCurrentUser() != null &&
-						 ((ANEApplication)mainActivity.getApplication()).getFriends() != null ) {
+					if ( ((ANEApplication)_mainActivity.getApplication()).getCurrentUser() != null &&
+						 ((ANEApplication)_mainActivity.getApplication()).getFriends() != null ) {
+						
+						// 사용자의 이름을 Air 로 전송
+						String name = ((ANEApplication)_mainActivity.getApplication()).getCurrentUser().getName();
+						if(name != null)
+						{
+							ANEExtension.aneContext.dispatchStatusEventAsync("userName", name);
+						}
 
-			            String id = ((ANEApplication)mainActivity.getApplication()).getCurrentUser().getId();
-			            
+						// 사용자의 사진을 Air 로 보냄
+			            String id = ((ANEApplication)_mainActivity.getApplication()).getCurrentUser().getId();
 				        _imageLoadAsyncTask = new ImageLoadAsyncTask();
 				        _imageLoadAsyncTask.execute(id);
 			            			            
@@ -118,7 +138,8 @@ public class InfoFetcher {
         	
         	Bitmap bmp = null;
 	        
-			HttpGet httpRequest = new HttpGet(URI.create("https://graph.facebook.com/" + params[0] + "/picture") );
+        	int iconWidth = 256;
+			HttpGet httpRequest = new HttpGet(URI.create("https://graph.facebook.com/" + params[0] + "/picture?width=" + iconWidth + "&height=" + iconWidth) );
             HttpClient httpclient = new DefaultHttpClient();
             HttpResponse response;
 			try {

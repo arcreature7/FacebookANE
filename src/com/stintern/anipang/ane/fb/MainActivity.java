@@ -1,6 +1,8 @@
 package com.stintern.anipang.ane.fb;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -24,6 +26,7 @@ import com.stintern.anipang.ane.utils.InfoFetcher;
 public class MainActivity extends Activity {
     
 	private static final String TAG = MainActivity.class.getSimpleName();
+	private static final List<String> PERMISSIONS = Arrays.asList("publish_actions, user_friends");
 	
     private InfoFetcher 	_infoFetcher;
     private ANEApplication 	_aneApplication; 
@@ -53,7 +56,7 @@ public class MainActivity extends Activity {
 	    ParseFacebookUtils.initialize(getString( getResourceId("app_id", "string")) );
         
 	    // 세션을 확인
-        Session session = Session.getActiveSession();
+        Session session = Session.getActiveSession();        
         if (session == null) {
             if (savedInstanceState != null) {
                 session = Session.restoreSession(this, null, statusCallback, savedInstanceState);
@@ -68,9 +71,16 @@ public class MainActivity extends Activity {
             if (session.getState().equals(SessionState.CREATED_TOKEN_LOADED)) {
                 session.openForRead(new Session.OpenRequest(this).setCallback(statusCallback));
             }
+            else
+            {
+            	login();
+            }
         }
         else
         {
+//            Session.NewPermissionsRequest newPermissionsRequest = new Session.NewPermissionsRequest(this, PERMISSIONS);
+//            session.requestNewPublishPermissions(newPermissionsRequest);
+            
         	// 사용자의 정보를 가져옴
             loadUserInformation();
         }
@@ -83,12 +93,22 @@ public class MainActivity extends Activity {
         Session session = Session.getActiveSession();
         if (session.isOpened()) {
         	
+        	Log.i(TAG, "loadUserInformation_isOpened");
+        	
         	// 로그인이 되어있을 경우 정보를 가져옴
         	if( !_aneApplication.isLoggedIn() )
         	{
+
+            	Log.i(TAG, "before fetchUserInformation");
+            	
         		_infoFetcher.fetchUserInformation(this);
         	}
         } 
+        else
+        {
+        	Log.i(TAG, "loadUserInformation_else");
+        	login();
+        }
     }
 
     private void login() {
