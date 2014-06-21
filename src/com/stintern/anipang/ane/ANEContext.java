@@ -10,6 +10,7 @@ import com.adobe.fre.FREFunction;
 import com.stintern.anipang.ane.fb.MainActivity;
 import com.stintern.anipang.ane.functions.GetUserInfo;
 import com.stintern.anipang.ane.functions.InviteFriends;
+import com.stintern.anipang.ane.functions.ShareApp;
 import com.stintern.anipang.ane.utils.Resources;
 
 public class ANEContext extends FREContext {
@@ -26,6 +27,7 @@ public class ANEContext extends FREContext {
         
         map.put("getUserInfo", new GetUserInfo());
         map.put("inviteFriends", new InviteFriends());
+        map.put("shareApp", new ShareApp());
         
 		return map;
 	}
@@ -41,6 +43,13 @@ public class ANEContext extends FREContext {
 	{
 		Intent intent = new Intent(getActivity(), MainActivity.class);
 		intent.putExtra(Resources.INTENT_TYPE, Resources.INVITE_FRIENDS);
+		getActivity().startActivity(intent);
+	}
+	
+	public void shareApp()
+	{
+		Intent intent = new Intent(getActivity(), MainActivity.class);
+		intent.putExtra(Resources.INTENT_TYPE, Resources.SHARE_APP);
 		getActivity().startActivity(intent);
 	}
 }

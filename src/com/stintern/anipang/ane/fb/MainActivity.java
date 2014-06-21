@@ -21,11 +21,11 @@ import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.Settings;
 import com.facebook.UiLifecycleHelper;
+import com.facebook.widget.FacebookDialog;
 import com.facebook.widget.WebDialog;
 import com.parse.Parse;
 import com.parse.ParseFacebookUtils;
 import com.stintern.anipang.ane.ANEExtension;
-import com.stintern.anipang.ane.R;
 import com.stintern.anipang.ane.utils.ANEApplication;
 import com.stintern.anipang.ane.utils.InfoFetcher;
 import com.stintern.anipang.ane.utils.Resources;
@@ -106,6 +106,10 @@ public class MainActivity extends Activity {
         	case Resources.INVITE_FRIENDS:
             	inviteFriends();
             	break;
+
+        	case Resources.SHARE_APP:
+            	shareApp();
+            	break;
         	}
         	
         }
@@ -182,6 +186,16 @@ public class MainActivity extends Activity {
     	    dialog.show();
     }
     
+    private void shareApp(){
+
+    	FacebookDialog.ShareDialogBuilder builder = new FacebookDialog.ShareDialogBuilder(this)
+        	.setLink(Resources.SHARE_GAME_LINK)
+        	.setName(Resources.SHARE_GAME_NAME);
+    	
+		if (builder.canPresent()) {
+		    builder.build().present();
+		}
+    }
 
     private class SessionStatusCallback implements Session.StatusCallback {
         @Override
