@@ -16,6 +16,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -33,12 +34,17 @@ import com.stintern.anipang.ane.R;
 import com.stintern.anipang.ane.fb.MainActivity;
 
 public class InfoFetcher {
-	
+
 	private static final String TAG = InfoFetcher.class.getSimpleName();
+
+    private MyAsyncTask myAsyncTask;
+	private MainActivity _mainActivity;
 	
 	public void fetchUserInformation(final MainActivity mainActivity){
 
 		Log.i(TAG, "fetchUserInformation Start");
+		
+		_mainActivity = mainActivity;
 		final Session session = Session.getActiveSession();	
 		if (session != null && session.isOpened()) {
 			// Get the user's list of friends
@@ -49,10 +55,10 @@ public class InfoFetcher {
 					FacebookRequestError error = response.getError();
 					if (error != null) {
 						Log.e(TAG, error.toString());
-						handleError(mainActivity, error, true);
+						handleError(_mainActivity, error, true);
 					} else if (session == Session.getActiveSession()) {
 						// Set the friends attribute
-						((ANEApplication)mainActivity.getApplication()).setFriends(users);
+						((ANEApplication)_mainActivity.getApplication()).setFriends(users);
 					}
 				}
 			});
@@ -68,23 +74,10 @@ public class InfoFetcher {
 //					obj.getInnerJSONObject();
 //				}
 //			});
-			
-			HttpGet httpRequest = new HttpGet(URI.create("https://graph.facebook.com/krbod/picture") );
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-			try {
-				response = (HttpResponse) httpclient.execute(httpRequest);
-	            HttpEntity entity = response.getEntity();
-	            BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
-	            Bitmap bmap = BitmapFactory.decodeStream(bufHttpEntity.getContent());
-	            httpRequest.abort();
-			} catch (ClientProtocolException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+
+	        myAsyncTask = new MyAsyncTask();
+	        myAsyncTask.execute(null);
+
 			
 //			new Request(session, "https://graph.facebook.com/krbod/picture", null, HttpMethod.GET, new Request.Callback() {
 //				
@@ -109,6 +102,8 @@ public class InfoFetcher {
 						// Set the currentFBUser attribute
 						((ANEApplication)mainActivity.getApplication()).setCurrentUser(user);
 						
+						((ANEApplication)mainActivity.getApplication()).setLoggedIn(true);
+						
 						// Now save the user into Parse.
 	                    saveUserToParse(user, session);
 					}
@@ -124,7 +119,7 @@ public class InfoFetcher {
 					if ( ((ANEApplication)mainActivity.getApplication()).getCurrentUser() != null &&
 						 ((ANEApplication)mainActivity.getApplication()).getFriends() != null ) {
 
-						mainActivity.setImage();
+						//mainActivity.setImage();
 			            
 			            String name = ((ANEApplication)mainActivity.getApplication()).getCurrentUser().getFirstName();
 			            
@@ -139,6 +134,51 @@ public class InfoFetcher {
 			// Execute the batch of requests asynchronously
 			requestBatch.executeAsync();
 		}
+    }
+	
+	public class MyAsyncTask extends AsyncTask<String, Void, Bitmap> {
+		 
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+         
+        protected Bitmap doInBackground(String... params) {
+        	
+        	Bitmap bmp = null;
+	        
+			HttpGet httpRequest = new HttpGet(URI.create("https://graph.facebook.com/krbod/picture") );
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpResponse response;
+			try {
+				response = (HttpResponse) httpclient.execute(httpRequest);
+	            HttpEntity entity = response.getEntity();
+	            BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
+	            bmp = BitmapFactory.decodeStream(bufHttpEntity.getContent());
+	            httpRequest.abort();
+			} catch (ClientProtocolException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	
+			return bmp;
+        }
+         
+        protected void onPostExecute(Bitmap result) {
+            super.onPostExecute(result);
+             
+            if(result != null){
+            	_mainActivity.setImage(result);
+            }
+             
+        }
+         
+        protected void onCancelled() {
+            super.onCancelled();
+        }
+         
     }
 	
 	private void saveUserToParse(GraphUser fbUser, Session session) {

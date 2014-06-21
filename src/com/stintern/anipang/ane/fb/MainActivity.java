@@ -20,9 +20,9 @@ import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.Settings;
 import com.facebook.UiLifecycleHelper;
-import com.facebook.widget.ProfilePictureView;
 import com.parse.Parse;
 import com.parse.ParseFacebookUtils;
+import com.stintern.anipang.ane.ANEExtension;
 import com.stintern.anipang.ane.utils.ANEApplication;
 import com.stintern.anipang.ane.utils.InfoFetcher;
 
@@ -63,8 +63,6 @@ public class MainActivity extends Activity {
 	    ParseFacebookUtils.initialize(getString(appID));
         
         Session session = Session.getActiveSession();
-		Session.NewPermissionsRequest newPermissionsRequest = new Session.NewPermissionsRequest(this, PERMISSIONS);
-        session.requestNewPublishPermissions(newPermissionsRequest);
         
         if (session == null) {
             if (savedInstanceState != null) {
@@ -131,36 +129,27 @@ public class MainActivity extends Activity {
     }
     
     
-	public void setImage()
+	public void setImage(Bitmap bmp)
 	{
-		ProfilePictureView image = new ProfilePictureView(this);
-
-		image = (ProfilePictureView)findViewById(getResources().getIdentifier("profilepic", "id", this.getPackageName()) );
-		image.setProfileId(_aneApplication.getCurrentUser().getId());
-		image.setCropped(true);
-		image.setDrawingCacheEnabled(true);
-
-		Bitmap bitmap = image.getDrawingCache();
-		
 		// Bitmap 파일을 String 으로 변환
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		bitmap.compress(CompressFormat.PNG, 100, stream);
+		bmp.compress(CompressFormat.PNG, 100, stream);
 		byte[] imageByteArray = stream.toByteArray();
 		
 		String encodedString = Base64.encodeToString(imageByteArray, Base64.NO_WRAP);
 		Log.i(TAG, encodedString);
 
 		
-//		Log.i(TAG, "이미지 변환 완료");
-//		if( ANEExtension.aneContext == null )
-//		{
-//			Log.i(TAG, "aneContext is null");
-//		}
-//		else
-//		{
-//			// Air Application 으로 변환한 String 값을 보냄
-//			ANEExtension.aneContext.dispatchStatusEventAsync("userImage", encodedString);
-//		}
+		Log.i(TAG, "이미지 변환 완료");
+		if( ANEExtension.aneContext == null )
+		{
+			Log.i(TAG, "aneContext is null");
+		}
+		else
+		{
+			// Air Application 으로 변환한 String 값을 보냄
+			ANEExtension.aneContext.dispatchStatusEventAsync("userImage", encodedString);
+		}
 		
 		finish();
 	}

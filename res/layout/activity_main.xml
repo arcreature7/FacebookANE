@@ -5,12 +5,6 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        
-    <com.facebook.widget.ProfilePictureView 
-        android:id="@+id/profilepic"
-        android:layout_width="1px"
-        android:layout_height="1px"
-        ></com.facebook.widget.ProfilePictureView>
 
     <Button
         android:id="@+id/buttonLoginLogout"
