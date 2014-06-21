@@ -11,17 +11,24 @@ import android.graphics.Bitmap.CompressFormat;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
 
+import com.facebook.FacebookException;
+import com.facebook.FacebookOperationCanceledException;
 import com.facebook.LoggingBehavior;
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.Settings;
 import com.facebook.UiLifecycleHelper;
+import com.facebook.widget.WebDialog;
 import com.parse.Parse;
 import com.parse.ParseFacebookUtils;
 import com.stintern.anipang.ane.ANEExtension;
+import com.stintern.anipang.ane.R;
 import com.stintern.anipang.ane.utils.ANEApplication;
 import com.stintern.anipang.ane.utils.InfoFetcher;
+import com.stintern.anipang.ane.utils.Resources;
 
 public class MainActivity extends Activity {
     
@@ -29,7 +36,14 @@ public class MainActivity extends Activity {
 	private static final List<String> PERMISSIONS = Arrays.asList("publish_actions, user_friends");
 	
     private InfoFetcher 	_infoFetcher;
-    private ANEApplication 	_aneApplication; 
+    private ANEApplication 	_aneApplication;
+    
+    private int _callType;
+
+    // 초대 관련
+    private WebDialog dialog = null;
+    private String dialogAction = null;
+    private Bundle dialogParams = null;
     
     //Facebook API
 	private UiLifecycleHelper _uiHelper;
@@ -39,6 +53,8 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
         setContentView( getResourceId("activity_main", "layout") );
+        
+        _callType = getIntent().getIntExtra(Resources.INTENT_TYPE, 0);
 
         //Session 을 고나리할 UILifecycleHelper 객체 생성
         _uiHelper = new UiLifecycleHelper(this, statusCallback);
@@ -80,9 +96,18 @@ public class MainActivity extends Activity {
         {
 //            Session.NewPermissionsRequest newPermissionsRequest = new Session.NewPermissionsRequest(this, PERMISSIONS);
 //            session.requestNewPublishPermissions(newPermissionsRequest);
-            
-        	// 사용자의 정보를 가져옴
-            loadUserInformation();
+        	switch(_callType)
+        	{
+        	case Resources.GET_USER_INFO:
+            	// 사용자의 정보를 가져옴
+                loadUserInformation();
+                break;
+                
+        	case Resources.INVITE_FRIENDS:
+            	inviteFriends();
+            	break;
+        	}
+        	
         }
 	}
 
@@ -126,11 +151,42 @@ public class MainActivity extends Activity {
             session.closeAndClearTokenInformation();
         }
     }
+    
+    private void inviteFriends(){
+    	Bundle params = new Bundle();
+        params.putString("message", "Anipang!!! " + /*application.getScore() +*/ " 같이 하자!!");
+        showDialogWithoutNotificationBar("apprequests", params);
+    }
+    
+    private void showDialogWithoutNotificationBar(String action, Bundle params){
+    	dialog = new WebDialog.Builder(this, Session.getActiveSession(), action, params).
+    	        setOnCompleteListener(new WebDialog.OnCompleteListener() {
+    	        @Override
+    	        public void onComplete(Bundle values, FacebookException error) {
+    	            if (error != null && !(error instanceof FacebookOperationCanceledException)) {
+    	            	Log.e(TAG, getString( getResourceId("network_error", "string") ));
+    	            }
+    	            dialog = null;
+    	            dialogAction = null;
+    	            dialogParams = null;
+    	        }
+    	    }).build();
+
+    	    Window dialog_window = dialog.getWindow();
+    	    dialog_window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+    	        WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+    	    dialogAction = action;
+    	    dialogParams = params;
+
+    	    dialog.show();
+    }
+    
 
     private class SessionStatusCallback implements Session.StatusCallback {
         @Override
         public void call(Session session, SessionState state, Exception exception) {
-            loadUserInformation();
+            //loadUserInformation();
         }
     }
     
