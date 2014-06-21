@@ -12,8 +12,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -37,17 +35,19 @@ public class InfoFetcher {
 
 	private static final String TAG = InfoFetcher.class.getSimpleName();
 
-    private MyAsyncTask myAsyncTask;
 	private MainActivity _mainActivity;
+    private ImageLoadAsyncTask _imageLoadAsyncTask;
 	
 	public void fetchUserInformation(final MainActivity mainActivity){
 
 		Log.i(TAG, "fetchUserInformation Start");
 		
+		((ANEApplication)mainActivity.getApplication()).setLoggedIn(true);
+		
 		_mainActivity = mainActivity;
 		final Session session = Session.getActiveSession();	
 		if (session != null && session.isOpened()) {
-			// Get the user's list of friends
+
 			Request friendsRequest = Request.newMyFriendsRequest(session, new Request.GraphUserListCallback() {
 	
 				@Override
@@ -57,39 +57,17 @@ public class InfoFetcher {
 						Log.e(TAG, error.toString());
 						handleError(_mainActivity, error, true);
 					} else if (session == Session.getActiveSession()) {
-						// Set the friends attribute
+
 						((ANEApplication)_mainActivity.getApplication()).setFriends(users);
 					}
 				}
 			});
+			
 			Bundle params = new Bundle();
 			params.putString("fields", "name,first_name,last_name");
 			friendsRequest.setParameters(params);
 			
-//			Request req = new Request(session, "/me/photos", null, HttpMethod.GET, new Request.Callback() {
-//				
-//				@Override
-//				public void onCompleted(Response response) {
-//					GraphObject obj = response.getGraphObject();
-//					obj.getInnerJSONObject();
-//				}
-//			});
-
-	        myAsyncTask = new MyAsyncTask();
-	        myAsyncTask.execute(null);
-
-			
-//			new Request(session, "https://graph.facebook.com/krbod/picture", null, HttpMethod.GET, new Request.Callback() {
-//				
-//				@Override
-//				public void onCompleted(Response response) {
-//					GraphObject obj = response.getGraphObject();
-//					obj.getInnerJSONObject();
-//					
-//				}
-//			}).executeAsync();
-			
-			// Get current logged in user information
+			// 사용자의 정보를 받아옴
 			Request meRequest = Request.newMeRequest(session, new Request.GraphUserCallback() {
 				
 				@Override
@@ -99,18 +77,13 @@ public class InfoFetcher {
 						Log.e(TAG, error.toString());
 						handleError(mainActivity, error, true);
 					} else if (session == Session.getActiveSession()) {
-						// Set the currentFBUser attribute
+						// 사용자의 정보를 저장
 						((ANEApplication)mainActivity.getApplication()).setCurrentUser(user);
-						
-						((ANEApplication)mainActivity.getApplication()).setLoggedIn(true);
-						
-						// Now save the user into Parse.
-	                    saveUserToParse(user, session);
+				        
+	                    //saveUserToParse(user, session);
 					}
 				}
 			});
-			
-			// Create a RequestBatch and add a callback once the batch of requests completes
 			RequestBatch requestBatch = new RequestBatch(friendsRequest, meRequest);
 			requestBatch.addCallback(new RequestBatch.Callback() {
 	
@@ -119,24 +92,23 @@ public class InfoFetcher {
 					if ( ((ANEApplication)mainActivity.getApplication()).getCurrentUser() != null &&
 						 ((ANEApplication)mainActivity.getApplication()).getFriends() != null ) {
 
-						//mainActivity.setImage();
+			            String id = ((ANEApplication)mainActivity.getApplication()).getCurrentUser().getId();
 			            
-			            String name = ((ANEApplication)mainActivity.getApplication()).getCurrentUser().getFirstName();
-			            
-			            Log.i(TAG, name);
-
+				        _imageLoadAsyncTask = new ImageLoadAsyncTask();
+				        _imageLoadAsyncTask.execute(id);
+			            			            
 					} else {
 						//fbController.showError(fbController.getString(R.string.error_fetching_profile), true);
 					}
 				}
 			});
 			
-			// Execute the batch of requests asynchronously
+			// 모든 Request 를 비동기 실행
 			requestBatch.executeAsync();
 		}
     }
 	
-	public class MyAsyncTask extends AsyncTask<String, Void, Bitmap> {
+	public class ImageLoadAsyncTask extends AsyncTask<String, Void, Bitmap> {
 		 
         protected void onPreExecute() {
             super.onPreExecute();
@@ -146,7 +118,7 @@ public class InfoFetcher {
         	
         	Bitmap bmp = null;
 	        
-			HttpGet httpRequest = new HttpGet(URI.create("https://graph.facebook.com/krbod/picture") );
+			HttpGet httpRequest = new HttpGet(URI.create("https://graph.facebook.com/" + params[0] + "/picture") );
             HttpClient httpclient = new DefaultHttpClient();
             HttpResponse response;
 			try {
@@ -156,10 +128,8 @@ public class InfoFetcher {
 	            bmp = BitmapFactory.decodeStream(bufHttpEntity.getContent());
 	            httpRequest.abort();
 			} catch (ClientProtocolException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
         	
@@ -170,7 +140,8 @@ public class InfoFetcher {
             super.onPostExecute(result);
              
             if(result != null){
-            	_mainActivity.setImage(result);
+            	_mainActivity.sendImageToAir(result);
+            	_mainActivity.finish();
             }
              
         }
@@ -218,102 +189,49 @@ public class InfoFetcher {
 	
 	
 	private void handleError(MainActivity mainActivity, FacebookRequestError error, boolean logout) {
-        DialogInterface.OnClickListener listener = null;
-        String dialogBody = null;
-
         if (error == null) {
-            dialogBody = mainActivity.getString(R.string.error_dialog_default_text);
+            Log.e(TAG, mainActivity.getString(R.string.error_dialog_default_text));
         }
         else {
             switch (error.getCategory()) {
                 case AUTHENTICATION_RETRY:
                 	Log.e(TAG,"AUTHENTICATION_RETRY");
-//                    // tell the user what happened by getting the message id, and
-//                    // retry the operation later
-//                    String userAction = (error.shouldNotifyUser()) ? "" :
-//                            getString(error.getUserActionMessageId());
-//                    dialogBody = getString(R.string.error_authentication_retry, userAction);
-//                    listener = new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialogInterface, int i) {
-//                            Intent intent = new Intent(Intent.ACTION_VIEW, M_FACEBOOK_URL);
-//                            startActivity(intent);
-//                        }
-//                    };
+                	
                     break;
 
                 case AUTHENTICATION_REOPEN_SESSION:
                 	Log.e(TAG,"AUTHENTICATION_REOPEN_SESSION");
-//                    // close the session and reopen it.
-//                    dialogBody = getString(R.string.error_authentication_reopen);
-//                    listener = new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialogInterface, int i) {
-//                            Session session = Session.getActiveSession();
-//                            if (session != null && !session.isClosed()) {
-//                                session.closeAndClearTokenInformation();
-//                            }
-//                        }
-//                    };
+                	
                     break;
 
                 case PERMISSION:
                 	Log.e(TAG,"PERMISSION");
-//                    // request the publish permission
-//                    dialogBody = getString(R.string.error_permission);
-//                    listener = new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialogInterface, int i) {
-//                        	if (fragments[HOME] != null) {
-//                        		((HomeFragment) fragments[HOME]).setPendingPost(true);
-//                        		((HomeFragment) fragments[HOME]).requestPublishPermissions(Session.getActiveSession());
-//                        	}
-//                        }
-//                    };
+
                     break;
 
                 case SERVER:
                 case THROTTLING:
                 	Log.e(TAG,"SERVER, THROTTLING");
-//                    // this is usually temporary, don't clear the fields, and
-//                    // ask the user to try again
-//                    dialogBody = getString(R.string.error_server);
+
                     break;
-//
+
                 case BAD_REQUEST:
                 	Log.e(TAG,"BAD_REQUEST");
-//                    // this is likely a coding error, ask the user to file a bug
-//                    dialogBody = getString(R.string.error_bad_request, error.getErrorMessage());
+
                     break;
 
                 case CLIENT:
                 	Log.e(TAG,"CLIENT");
-//                	// this is likely an IO error, so tell the user they have a network issue
-                	dialogBody = mainActivity.getString(R.string.network_error);
+
                     break;
                     
                 case OTHER:
                 default:
                 	Log.e(TAG,"OTHER");
-//                    // an unknown issue occurred, this could be a code error, or
-//                    // a server side issue, log the issue, and either ask the
-//                    // user to retry, or file a bug
-//                    dialogBody = getString(R.string.error_unknown, error.getErrorMessage());
+                	
                     break;
             }
         }
-//
-        new AlertDialog.Builder(mainActivity)
-                .setPositiveButton(R.string.error_dialog_button_text, listener)
-                .setTitle(R.string.error_dialog_title)
-                .setMessage(dialogBody)
-                .show();
-//        
-//        if (logout) {
-//        	logout();
-        
     }
-    		
-    		
-    		
+	
 }
