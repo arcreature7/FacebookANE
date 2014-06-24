@@ -51,7 +51,13 @@ public class MainActivity extends Activity {
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		Log.i(TAG, "onCreate");
+		
 		super.onCreate(savedInstanceState);
+
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND, WindowManager.LayoutParams.FLAG_BLUR_BEHIND); 
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		
         setContentView( getResourceId("activity_main", "layout") );
         
         _callType = getIntent().getIntExtra(Resources.INTENT_TYPE, 0);
@@ -68,37 +74,47 @@ public class MainActivity extends Activity {
         // Facebook 연동을 위한 준비과정
         Settings.addLoggingBehavior(LoggingBehavior.INCLUDE_ACCESS_TOKENS);
 	    
+        Log.i(TAG, "Parse Start");
 	    Parse.initialize( getApplicationContext(), getString(getResourceId("app_id", "string")), getString(getResourceId("app_secret", "string")) );
 	    ParseFacebookUtils.initialize(getString( getResourceId("app_id", "string")) );
         
 	    // 세션을 확인
+	    Log.i(TAG, "check session in onCreate");
         Session session = Session.getActiveSession();        
         if (session == null) {
+        	Log.i(TAG, "session == null");
             if (savedInstanceState != null) {
+            	Log.i(TAG, "savedInstanceState != null");
                 session = Session.restoreSession(this, null, statusCallback, savedInstanceState);
             }
             
             if (session == null) {
+            	Log.i(TAG, "new session");
                 session = new Session(this);
             }
             
             // 세션 설정을 설정하고 Facebook Login 창을 띄움
             Session.setActiveSession(session);
             if (session.getState().equals(SessionState.CREATED_TOKEN_LOADED)) {
+
+            	Log.i(TAG, "openForRead");
                 session.openForRead(new Session.OpenRequest(this).setCallback(statusCallback));
             }
             else
             {
+            	Log.i(TAG, "login");
             	login();
             }
         }
         else
         {
+        	Log.i(TAG, "session == null -> else");
 //            Session.NewPermissionsRequest newPermissionsRequest = new Session.NewPermissionsRequest(this, PERMISSIONS);
 //            session.requestNewPublishPermissions(newPermissionsRequest);
         	switch(_callType)
         	{
         	case Resources.GET_USER_INFO:
+            	Log.i(TAG, "GET_USER_INFO");
             	// 사용자의 정보를 가져옴
                 loadUserInformation();
                 break;
@@ -119,6 +135,7 @@ public class MainActivity extends Activity {
 	 * 현재 세션을 확인하고 Open 되어 있으면 사용자의 정보를 가져옵니다.
 	 */
 	private void loadUserInformation() {
+    	Log.i(TAG, "loadUserInformation");
         Session session = Session.getActiveSession();
         if (session.isOpened()) {
         	
@@ -141,15 +158,19 @@ public class MainActivity extends Activity {
     }
 
     private void login() {
+    	Log.i(TAG, "login");
         Session session = Session.getActiveSession();
         if (!session.isOpened() && !session.isClosed()) {
+        	Log.i(TAG, "!session.isOpened() && !session.isClosed()");
             session.openForRead(new Session.OpenRequest(this).setCallback(statusCallback));
         } else {
+        	Log.i(TAG, "else in login()");
             Session.openActiveSession(this, true, statusCallback);
         }
     }
 
     private void logout() {
+    	Log.i(TAG, "logout");
         Session session = Session.getActiveSession();
         if (!session.isClosed()) {
             session.closeAndClearTokenInformation();
@@ -200,12 +221,28 @@ public class MainActivity extends Activity {
     private class SessionStatusCallback implements Session.StatusCallback {
         @Override
         public void call(Session session, SessionState state, Exception exception) {
-            //loadUserInformation();
+        	Log.i(TAG, "SessionStatusCallback");
+        	if( _callType == Resources.GET_USER_INFO )
+        	{
+                if (session.isOpened()) {
+                	
+                	Log.i(TAG, "loadUserInformation_isOpened");
+                	
+                	// 로그인이 되어있을 경우 정보를 가져옴
+                	if( !_aneApplication.isLoggedIn() )
+                	{
+                    	// 사용자의 정보를 가져옴
+                		_infoFetcher.fetchUserInformation(MainActivity.this);
+                	}
+                }
+        	}
+            	
         }
     }
     
 	public void sendImageToAir(Bitmap bmp)
 	{
+    	Log.i(TAG, "sendImageToAir");
 		// Bitmap 파일을 String 으로 변환
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		bmp.compress(CompressFormat.PNG, 100, stream);
@@ -245,12 +282,14 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onStart() {
+    	Log.i(TAG, "onStart");
 		super.onStart();
         Session.getActiveSession().addCallback(statusCallback);
 	}
 
 	@Override
 	protected void onStop() {
+    	Log.i(TAG, "onStop");
 		super.onStop();
 		
 		_uiHelper.onStop();
@@ -258,18 +297,21 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onDestroy() {
+    	Log.i(TAG, "onDestroy");
 		super.onDestroy();
 		_uiHelper.onDestroy();
 	}
 
 	@Override
 	protected void onPause() {
+    	Log.i(TAG, "onPause");
 		super.onPause();
 		_uiHelper.onPause();
 	}
 
 	@Override
 	protected void onResume() {
+    	Log.i(TAG, "onResume");
 		super.onResume();
 		_uiHelper.onResume();
 	}

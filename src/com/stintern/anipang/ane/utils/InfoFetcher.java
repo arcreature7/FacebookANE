@@ -49,6 +49,7 @@ public class InfoFetcher {
 		final Session session = Session.getActiveSession();	
 		if (session != null && session.isOpened()) {
 
+			
 			Request friendsRequest = Request.newMyFriendsRequest(session, new Request.GraphUserListCallback() {
 	
 				@Override
@@ -67,18 +68,6 @@ public class InfoFetcher {
 			Bundle params = new Bundle();
 			params.putString("fields", "name,first_name,last_name");
 			friendsRequest.setParameters(params);
-			
-//			RequestAsyncTask friendsRq = new Request(
-//				    session,
-//				    "/me/invitable_friends",
-//				    null,
-//				    HttpMethod.GET,
-//				    new Request.Callback() {
-//				        public void onCompleted(Response response) {
-//				            Log.i(TAG, response.toString());
-//				        }
-//				    }
-//				).executeAsync();
 			
 			// 사용자의 정보를 받아옴
 			Request meRequest = Request.newMeRequest(session, new Request.GraphUserCallback() {

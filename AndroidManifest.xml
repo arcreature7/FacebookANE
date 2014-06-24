@@ -16,7 +16,8 @@
         android:theme="@style/AppTheme" 
         android:name="com.stintern.anipang.ane.utils.ANEApplication">
         
-        <activity android:name="com.stintern.anipang.ane.fb.MainActivity">            
+        <activity android:name="com.stintern.anipang.ane.fb.MainActivity"
+            android:theme="@android:style/Theme.Translucent">            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
