@@ -151,7 +151,6 @@ public class InfoFetcher {
              
             if(result != null){
             	_mainActivity.sendImageToAir(result);
-            	_mainActivity.finish();
             }
              
         }

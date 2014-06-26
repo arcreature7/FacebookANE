@@ -33,12 +33,15 @@ import com.stintern.anipang.ane.utils.Resources;
 public class MainActivity extends Activity {
     
 	private static final String TAG = MainActivity.class.getSimpleName();
-	private static final List<String> PERMISSIONS = Arrays.asList("publish_actions, user_friends");
+//	private static final List<String> PERMISSIONS = Arrays.asList("publish_actions, user_friends");
 	
     private InfoFetcher 	_infoFetcher;
     private ANEApplication 	_aneApplication;
     
     private int _callType;
+    
+    
+    private boolean _processEnded = false;
 
     // 초대 관련
     private WebDialog dialog = null;
@@ -169,15 +172,17 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void logout() {
-    	Log.i(TAG, "logout");
-        Session session = Session.getActiveSession();
-        if (!session.isClosed()) {
-            session.closeAndClearTokenInformation();
-        }
-    }
+//    private void logout() {
+//    	Log.i(TAG, "logout");
+//        Session session = Session.getActiveSession();
+//        if (!session.isClosed()) {
+//            session.closeAndClearTokenInformation();
+//        }
+//    }
     
     private void inviteFriends(){
+    	_processEnded = false;
+    	
     	Bundle params = new Bundle();
         params.putString("message", "Anipang!!! " + /*application.getScore() +*/ " 같이 하자!!");
         showDialogWithoutNotificationBar("apprequests", params);
@@ -197,17 +202,21 @@ public class MainActivity extends Activity {
     	        }
     	    }).build();
 
-    	    Window dialog_window = dialog.getWindow();
-    	    dialog_window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-    	        WindowManager.LayoutParams.FLAG_FULLSCREEN);
+	    Window dialog_window = dialog.getWindow();
+	    dialog_window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+	        WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-    	    dialogAction = action;
-    	    dialogParams = params;
+	    dialogAction = action;
+	    dialogParams = params;
 
-    	    dialog.show();
+	    dialog.show();
+	    
+	    _processEnded = true;
     }
     
     private void shareApp(){
+    	
+    	_processEnded = false;
 
     	FacebookDialog.ShareDialogBuilder builder = new FacebookDialog.ShareDialogBuilder(this)
         	.setLink(Resources.SHARE_GAME_LINK)
@@ -215,6 +224,7 @@ public class MainActivity extends Activity {
     	
 		if (builder.canPresent()) {
 		    builder.build().present();
+		    _processEnded = true;
 		}
     }
 
@@ -222,8 +232,9 @@ public class MainActivity extends Activity {
         @Override
         public void call(Session session, SessionState state, Exception exception) {
         	Log.i(TAG, "SessionStatusCallback");
-        	if( _callType == Resources.GET_USER_INFO )
+        	switch( _callType )
         	{
+        	case Resources.GET_USER_INFO:
                 if (session.isOpened()) {
                 	
                 	Log.i(TAG, "loadUserInformation_isOpened");
@@ -235,8 +246,22 @@ public class MainActivity extends Activity {
                 		_infoFetcher.fetchUserInformation(MainActivity.this);
                 	}
                 }
+                break;
+                
+        	case Resources.SHARE_APP:
+        		if( _processEnded )
+        		{
+        			finish();
+        		}
+        		break;
+        		
+        	case Resources.INVITE_FRIENDS:
+        		if( _processEnded )
+        		{
+        			finish();
+        		}
+        		break;
         	}
-            	
         }
     }
     
@@ -260,6 +285,8 @@ public class MainActivity extends Activity {
 			// Air Application 으로 변환한 String 값을 보냄
 			ANEExtension.aneContext.dispatchStatusEventAsync("userImage", encodedString);
 		}
+		
+		finish();
 	}
 	
 	private int getResourceId(String name, String type){
